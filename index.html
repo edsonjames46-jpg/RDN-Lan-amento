@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cliente - Sistema de Relatórios</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <!-- Custom CSS -->
+    <style>
+      :root {
+        --primary-color: #007bff; /* Azul */
+        --secondary-color: #6c757d; /* Cinza */
+        --light-color: #f8f9fa; /* Branco/Claro */
+        --dark-color: #343a40; /* Escuro */
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--light-color);
+        color: var(--dark-color);
+        background-image: url("ARNFundo.jpg"); /* Placeholder de imagem de fundo */
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        position: relative;
+      }
+      body::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.8); /* Opacidade para o fundo */
+        z-index: -1;
+      }
+      .navbar {
+        background-color: var(--primary-color);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .navbar-brand,
+      .nav-link {
+        color: var(--light-color) !important;
+      }
+      .navbar-brand:hover,
+      .nav-link:hover {
+        color: rgba(255, 255, 255, 0.75) !important;
+      }
+      .sidebar {
+        width: 250px;
+        background-color: var(--dark-color);
+        color: var(--light-color);
+        position: fixed;
+        height: 100%;
+        padding-top: 60px; /* Adjust for fixed navbar */
+        transition: all 0.3s;
+        z-index: 1000;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      }
+      .sidebar .nav-link {
+        color: var(--light-color);
+        padding: 15px 20px;
+        border-left: 3px solid transparent;
+      }
+      .sidebar .nav-link:hover,
+      .sidebar .nav-link.active {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-left-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+      .content {
+        margin-left: 250px;
+        padding: 20px;
+        transition: all 0.3s;
+      }
+      .card {
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+      }
+      .card-header {
+        background-color: var(--primary-color);
+        color: var(--light-color);
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+      }
+      .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+      .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+      }
+      .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+      }
+      .table th {
+        background-color: var(--secondary-color);
+        color: var(--light-color);
+      }
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        flex-direction: column;
+      }
+      .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        color: var(--primary-color);
+      }
+      .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: transparent; /* Para mostrar a imagem de fundo */
+      }
+      .login-card {
+        width: 100%;
+        max-width: 400px;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        background-color: #fff;
+      }
+      .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 0;
+          overflow: hidden;
+        }
+        .content {
+          margin-left: 0;
+        }
+        .sidebar.active {
+          width: 250px;
+        }
+        .content.active {
+          margin-left: 250px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay d-none">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Carregando...</span>
+      </div>
+      <p class="mt-3">Carregando...</p>
+    </div>
+
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+      <div class="login-card">
+        <h2 class="text-center mb-4" style="color: var(--primary-color)">
+          Login
+        </h2>
+        <form id="loginForm">
+          <div class="mb-3">
+            <label for="loginEmail" class="form-label">Email</label>
+            <input
+              type="email"
+              class="form-control"
+              id="loginEmail"
+              required
+              value="cliente@test.com"
+            />
+          </div>
+          <div class="mb-3">
+            <label for="loginPassword" class="form-label">Senha</label>
+            <input
+              type="password"
+              class="form-control"
+              id="loginPassword"
+              required
+              value="senha123"
+            />
+          </div>
+          <div id="loginError" class="alert alert-danger d-none"></div>
+          <button type="submit" class="btn btn-primary w-100">Entrar</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Application Page -->
+    <div id="appPage" class="d-none">
+      <!-- Navbar -->
+      <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container-fluid">
+          <button
+            class="btn btn-primary me-2 d-lg-none"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#sidebarOffcanvas"
+            aria-controls="sidebarOffcanvas"
+          >
+            <i class="fas fa-bars"></i>
+          </button>
+          <a class="navbar-brand" href="#">
+            <!-- Placeholder de Logo - Substitua o src pela sua imagem -->
+            <img src="ARN.png" alt="Logo" width="40" height="40" class="me-2" />
+            Sistema de Relatórios
+          </a>
+          <div class="d-flex ms-auto">
+            <div class="dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="navbarDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fas fa-user-circle me-1"></i>
+                <span id="userEmailDisplay"></span>
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="navbarDropdown"
+              >
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    data-bs-toggle="modal"
+                    data-bs-target="#profileModal"
+                    ><i class="fas fa-id-badge me-2"></i>Meu Perfil</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="#" id="logoutBtn"
+                    ><i class="fas fa-sign-out-alt me-2"></i>Sair</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Sidebar -->
+      <div
+        class="sidebar offcanvas offcanvas-start"
+        tabindex="-1"
+        id="sidebarOffcanvas"
+        aria-labelledby="sidebarOffcanvasLabel"
+      >
+        <div class="offcanvas-header">
+          <h5
+            class="offcanvas-title"
+            id="sidebarOffcanvasLabel"
+            style="color: var(--light-color)"
+          >
+            Menu
+          </h5>
+          <button
+            type="button"
+            class="btn-close text-reset"
+            data-bs-dismiss="offcanvas"
+            aria-label="Close"
+            style="filter: invert(1)"
+          ></button>
+        </div>
+        <div class="offcanvas-body p-0">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                id="launch-report-tab"
+                data-bs-toggle="tab"
+                href="#launch-report"
+                role="tab"
+                aria-controls="launch-report"
+                aria-selected="true"
+              >
+                <i class="fas fa-plus-circle me-2"></i> Lançamento
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link"
+                id="previous-reports-tab"
+                data-bs-toggle="tab"
+                href="#previous-reports"
+                role="tab"
+                aria-controls="previous-reports"
+                aria-selected="false"
+              >
+                <i class="fas fa-history me-2"></i> Relatórios Anteriores
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link"
+                id="dashboard-tab"
+                data-bs-toggle="tab"
+                href="#dashboard"
+                role="tab"
+                aria-controls="dashboard"
+                aria-selected="false"
+              >
+                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="content" id="mainContent">
+        <div class="tab-content">
+          <!-- Lançamento Tab -->
+          <div
+            class="tab-pane fade show active"
+            id="launch-report"
+            role="tabpanel"
+            aria-labelledby="launch-report-tab"
+          >
+            <h3 class="mb-4">Lançar Novo Relatório</h3>
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5 class="mb-0">Formulário de Lançamento</h5>
+              </div>
+              <div class="card-body">
+                <form id="reportForm">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label for="reportDate" class="form-label">Data</label>
+                      <input
+                        type="date"
+                        class="form-control"
+                        id="reportDate"
+                        required
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="reportTime" class="form-label">Hora</label>
+                      <input
+                        type="time"
+                        class="form-control"
+                        id="reportTime"
+                        required
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="reportCollaborator" class="form-label"
+                        >Nome do Colaborador</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="reportCollaborator"
+                        required
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="reportShift" class="form-label"
+                        >Plantão</label
+                      >
+                      <select class="form-select" id="reportShift" required>
+                        <option value="">Selecione...</option>
+                        <option value="Alfa">Alfa</option>
+                        <option value="Bravo">Bravo</option>
+                        <option value="Charlie">Charlie</option>
+                        <option value="Delta">Delta</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="reportClassification" class="form-label"
+                        >Classificação</label
+                      >
+                      <select
+                        class="form-select"
+                        id="reportClassification"
+                        required
+                      >
+                        <option value="">Selecione...</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label for="reportSubclassification" class="form-label"
+                        >Subclassificação</label
+                      >
+                      <select
+                        class="form-select"
+                        id="reportSubclassification"
+                        required
+                        disabled
+                      >
+                        <option value="">Selecione...</option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-12"
+                      id="otherDescriptionGroup"
+                      style="display: none"
+                    >
+                      <label for="otherDescription" class="form-label"
+                        >Descrição (Outros)</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="otherDescription"
+                        placeholder="Descreva a subclassificação"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="reportRequester" class="form-label"
+                        >Solicitante Inicial</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="reportRequester"
+                        required
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label for="reportResidence" class="form-label"
+                        >Residência</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="reportResidence"
+                        required
+                      />
+                    </div>
+                    <div class="col-12">
+                      <label for="reportSubject" class="form-label"
+                        >Assunto</label
+                      >
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="reportSubject"
+                        required
+                      />
+                    </div>
+                    <div class="col-12">
+                      <label for="reportDescription" class="form-label"
+                        >Descrição do Fato</label
+                      >
+                      <textarea
+                        class="form-control"
+                        id="reportDescription"
+                        rows="3"
+                        required
+                      ></textarea>
+                    </div>
+                    <div class="col-12">
+                      <label for="reportStatus" class="form-label"
+                        >Status</label
+                      >
+                      <select class="form-select" id="reportStatus" required>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Concluído">Concluído</option>
+                        <option value="Aguardando Retorno da Gerência">
+                          Aguardando Retorno da Gerência
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <div id="reportFormMessage" class="alert d-none"></div>
+                      <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Lançar Relatório
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <h4 class="mb-3">Relatórios do Mês (Últimos 30 dias)</h4>
+            <div class="row mb-4">
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-primary mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Total</h5>
+                    <p class="card-text fs-3" id="kpiMonthTotalReports">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-warning mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Em Andamento</h5>
+                    <p class="card-text fs-3" id="kpiMonthInProgressReports">
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-success mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Concluídos</h5>
+                    <p class="card-text fs-3" id="kpiMonthCompletedReports">
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-info mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Aguardando Retorno</h5>
+                    <p
+                      class="card-text fs-3"
+                      id="kpiMonthAwaitingReturnReports"
+                    >
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5 class="mb-0">Filtros</h5>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label for="monthFilterClassification" class="form-label"
+                      >Classificação</label
+                    >
+                    <select class="form-select" id="monthFilterClassification">
+                      <option value="">Todas</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="monthFilterStatus" class="form-label"
+                      >Status</label
+                    >
+                    <select class="form-select" id="monthFilterStatus">
+                      <option value="">Todos</option>
+                      <option value="Em Andamento">Em Andamento</option>
+                      <option value="Concluído">Concluído</option>
+                      <option value="Aguardando Retorno da Gerência">
+                        Aguardando Retorno da Gerência
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="monthFilterSearch" class="form-label"
+                      >Buscar</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="monthFilterSearch"
+                      placeholder="Assunto, descrição, colaborador..."
+                    />
+                  </div>
+                  <div class="col-md-6 d-flex align-items-end">
+                    <button
+                      class="btn btn-primary w-100"
+                      id="applyMonthFiltersBtn"
+                    >
+                      <i class="fas fa-filter me-2"></i>Aplicar Filtros
+                    </button>
+                  </div>
+                  <div class="col-md-6 d-flex align-items-end">
+                    <button
+                      class="btn btn-secondary w-100"
+                      id="clearMonthFiltersBtn"
+                    >
+                      <i class="fas fa-times me-2"></i>Limpar Filtros
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div
+                class="card-header d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0">Lista de Relatórios do Mês</h5>
+                <button class="btn btn-success btn-sm" id="exportMonthCsvBtn">
+                  <i class="fas fa-file-csv me-2"></i>Exportar CSV
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Data</th>
+                        <th>Hora</th>
+                        <th>Colaborador</th>
+                        <th>Plantão</th>
+                        <th>Classificação</th>
+                        <th>Assunto</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="monthReportsTableBody">
+                      <tr>
+                        <td colspan="9" class="text-center">
+                          Nenhum relatório encontrado.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <nav aria-label="Page navigation">
+                  <ul
+                    class="pagination justify-content-center"
+                    id="monthReportsPagination"
+                  >
+                    <!-- Pagination will be inserted here -->
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
+
+          <!-- Relatórios Anteriores Tab -->
+          <div
+            class="tab-pane fade"
+            id="previous-reports"
+            role="tabpanel"
+            aria-labelledby="previous-reports-tab"
+          >
+            <h3 class="mb-4">Relatórios Anteriores</h3>
+            <div class="row mb-4">
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-primary mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Total</h5>
+                    <p class="card-text fs-3" id="kpiPrevTotalReports">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-warning mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Em Andamento</h5>
+                    <p class="card-text fs-3" id="kpiPrevInProgressReports">
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-success mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Concluídos</h5>
+                    <p class="card-text fs-3" id="kpiPrevCompletedReports">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-info mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Aguardando Retorno</h5>
+                    <p class="card-text fs-3" id="kpiPrevAwaitingReturnReports">
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5 class="mb-0">Filtros</h5>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label for="prevFilterStartDate" class="form-label"
+                      >Data Início</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="prevFilterStartDate"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="prevFilterEndDate" class="form-label"
+                      >Data Fim</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="prevFilterEndDate"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="prevFilterClassification" class="form-label"
+                      >Classificação</label
+                    >
+                    <select class="form-select" id="prevFilterClassification">
+                      <option value="">Todas</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="prevFilterStatus" class="form-label"
+                      >Status</label
+                    >
+                    <select class="form-select" id="prevFilterStatus">
+                      <option value="">Todos</option>
+                      <option value="Em Andamento">Em Andamento</option>
+                      <option value="Concluído">Concluído</option>
+                      <option value="Aguardando Retorno da Gerência">
+                        Aguardando Retorno da Gerência
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="prevFilterSearch" class="form-label"
+                      >Buscar</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="prevFilterSearch"
+                      placeholder="Assunto, descrição, colaborador..."
+                    />
+                  </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <button
+                      class="btn btn-primary w-100"
+                      id="applyPrevFiltersBtn"
+                    >
+                      <i class="fas fa-filter me-2"></i>Aplicar Filtros
+                    </button>
+                  </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <button
+                      class="btn btn-secondary w-100"
+                      id="clearPrevFiltersBtn"
+                    >
+                      <i class="fas fa-times me-2"></i>Limpar Filtros
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div
+                class="card-header d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0">Lista de Relatórios Anteriores</h5>
+                <button class="btn btn-success btn-sm" id="exportPrevCsvBtn">
+                  <i class="fas fa-file-csv me-2"></i>Exportar CSV
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Data</th>
+                        <th>Hora</th>
+                        <th>Colaborador</th>
+                        <th>Plantão</th>
+                        <th>Classificação</th>
+                        <th>Assunto</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="prevReportsTableBody">
+                      <tr>
+                        <td colspan="9" class="text-center">
+                          Nenhum relatório encontrado.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <nav aria-label="Page navigation">
+                  <ul
+                    class="pagination justify-content-center"
+                    id="prevReportsPagination"
+                  >
+                    <!-- Pagination will be inserted here -->
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Tab -->
+          <div
+            class="tab-pane fade"
+            id="dashboard"
+            role="tabpanel"
+            aria-labelledby="dashboard-tab"
+          >
+            <h3 class="mb-4">Dashboard</h3>
+            <div class="row mb-4">
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-primary mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Total de Relatórios</h5>
+                    <p class="card-text fs-3" id="kpiTotalReports">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-warning mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Em Andamento</h5>
+                    <p class="card-text fs-3" id="kpiInProgressReports">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-success mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Concluídos</h5>
+                    <p class="card-text fs-3" id="kpiCompletedReports">0</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <div class="card text-white bg-info mb-3">
+                  <div class="card-body">
+                    <h5 class="card-title">Aguardando Retorno</h5>
+                    <p class="card-text fs-3" id="kpiAwaitingReturnReports">
+                      0
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5 class="mb-0">Filtro de Data</h5>
+              </div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-md-5">
+                    <label for="dashboardStartDate" class="form-label"
+                      >Data Início</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="dashboardStartDate"
+                    />
+                  </div>
+                  <div class="col-md-5">
+                    <label for="dashboardEndDate" class="form-label"
+                      >Data Fim</label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="dashboardEndDate"
+                    />
+                  </div>
+                  <div class="col-md-2 d-flex align-items-end">
+                    <button
+                      class="btn btn-primary w-100"
+                      id="applyDashboardFilter"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-lg-6">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h5 class="mb-0">Status dos Relatórios</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="chart-container">
+                      <canvas id="statusChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h5 class="mb-0">Relatórios por Classificação</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="chart-container">
+                      <canvas id="classificationChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-12">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h5 class="mb-0">
+                      Tendência de Relatórios (Últimos 30 dias)
+                    </h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="chart-container">
+                      <canvas id="trendChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-header">
+                <h5 class="mb-0">Últimos 10 Relatórios</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Data</th>
+                        <th>Colaborador</th>
+                        <th>Plantão</th>
+                        <th>Classificação</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dashboardLastReportsBody">
+                      <tr>
+                        <td colspan="7" class="text-center">
+                          Nenhum relatório recente.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Report Modal -->
+    <div
+      class="modal fade"
+      id="viewReportModal"
+      tabindex="-1"
+      aria-labelledby="viewReportModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="viewReportModalLabel">
+              Detalhes do Relatório
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>ID:</strong> <span id="modalReportId"></span></p>
+            <p><strong>Data:</strong> <span id="modalReportDate"></span></p>
+            <p><strong>Hora:</strong> <span id="modalReportTime"></span></p>
+            <p>
+              <strong>Colaborador:</strong>
+              <span id="modalReportCollaborator"></span>
+            </p>
+            <p><strong>Plantão:</strong> <span id="modalReportShift"></span></p>
+            <p>
+              <strong>Classificação:</strong>
+              <span id="modalReportClassification"></span>
+            </p>
+            <p>
+              <strong>Subclassificação:</strong>
+              <span id="modalReportSubclassification"></span>
+            </p>
+            <p>
+              <strong>Solicitante Inicial:</strong>
+              <span id="modalReportRequester"></span>
+            </p>
+            <p>
+              <strong>Residência:</strong>
+              <span id="modalReportResidence"></span>
+            </p>
+            <p>
+              <strong>Assunto:</strong> <span id="modalReportSubject"></span>
+            </p>
+            <p>
+              <strong>Descrição do Fato:</strong>
+              <span id="modalReportDescription"></span>
+            </p>
+            <p><strong>Status:</strong> <span id="modalReportStatus"></span></p>
+            <p>
+              <strong>Criado em:</strong>
+              <span id="modalReportCreatedAt"></span>
+            </p>
+            <p>
+              <strong>Atualizado em:</strong>
+              <span id="modalReportUpdatedAt"></span>
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Fechar
+            </button>
+            <button type="button" class="btn btn-primary" id="generatePdfBtn">
+              <i class="fas fa-file-pdf me-2"></i>Gerar PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div
+      class="modal fade"
+      id="profileModal"
+      tabindex="-1"
+      aria-labelledby="profileModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="profileModalLabel">Meu Perfil</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>Email:</strong> <span id="profileEmail"></span></p>
+            <p><strong>Função:</strong> <span id="profileRole"></span></p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+      // Firebase Configuration (REPLACE WITH YOUR ACTUAL CONFIG)
+      const firebaseConfig = {
+        apiKey: "AIzaSyBOnhjDu7WaMBsGQ_-tpF18omPpCR2xbAs",
+        authDomain: "rdn-2026.firebaseapp.com",
+        databaseURL: "https://rdn-2026-default-rtdb.firebaseio.com",
+        projectId: "rdn-2026",
+        storageBucket: "rdn-2026.firebasestorage.app",
+        messagingSenderId: "564122313584",
+        appId: "1:564122313584:web:add0d0a88fdd970620e5b5",
+        measurementId: "G-JSXFHE2X4F",
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const database = firebase.database();
+
+      let currentUser = null;
+      let currentUserRole = null;
+      let allReports = [];
+      let classifications = {}; // This will be populated from Firebase
+
+      // Pagination for "Relatórios do Mês"
+      let monthCurrentPage = 1;
+      let monthFilteredReports = [];
+      const monthReportsPerPage = 10;
+
+      // Pagination for "Relatórios Anteriores"
+      let prevCurrentPage = 1;
+      let prevFilteredReports = [];
+      const prevReportsPerPage = 10;
+
+      // Chart instances
+      let statusChartInstance = null;
+      let classificationChartInstance = null;
+      let trendChartInstance = null;
+
+      // --- UI Elements ---
+      const loadingOverlay = document.getElementById("loadingOverlay");
+      const loginPage = document.getElementById("loginPage");
+      const appPage = document.getElementById("appPage");
+      const loginForm = document.getElementById("loginForm");
+      const loginEmail = document.getElementById("loginEmail");
+      const loginPassword = document.getElementById("loginPassword");
+      const loginError = document.getElementById("loginError");
+      const userEmailDisplay = document.getElementById("userEmailDisplay");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const profileEmail = document.getElementById("profileEmail");
+      const profileRole = document.getElementById("profileRole");
+
+      // Lançamento Form
+      const reportForm = document.getElementById("reportForm");
+      const reportDate = document.getElementById("reportDate");
+      const reportTime = document.getElementById("reportTime");
+      const reportCollaborator = document.getElementById("reportCollaborator");
+      const reportShift = document.getElementById("reportShift");
+      const reportClassification = document.getElementById(
+        "reportClassification"
+      );
+      const reportSubclassification = document.getElementById(
+        "reportSubclassification"
+      );
+      const otherDescriptionGroup = document.getElementById(
+        "otherDescriptionGroup"
+      );
+      const otherDescription = document.getElementById("otherDescription");
+      const reportRequester = document.getElementById("reportRequester");
+      const reportResidence = document.getElementById("reportResidence");
+      const reportSubject = document.getElementById("reportSubject");
+      const reportDescription = document.getElementById("reportDescription");
+      const reportStatus = document.getElementById("reportStatus"); // NEW
+      const reportFormMessage = document.getElementById("reportFormMessage");
+
+      // Relatórios do Mês (under Lançamento tab)
+      const kpiMonthTotalReports = document.getElementById(
+        "kpiMonthTotalReports"
+      );
+      const kpiMonthInProgressReports = document.getElementById(
+        "kpiMonthInProgressReports"
+      );
+      const kpiMonthCompletedReports = document.getElementById(
+        "kpiMonthCompletedReports"
+      );
+      const kpiMonthAwaitingReturnReports = document.getElementById(
+        "kpiMonthAwaitingReturnReports"
+      );
+      const monthFilterClassification = document.getElementById(
+        "monthFilterClassification"
+      );
+      const monthFilterStatus = document.getElementById("monthFilterStatus");
+      const monthFilterSearch = document.getElementById("monthFilterSearch");
+      const applyMonthFiltersBtn = document.getElementById(
+        "applyMonthFiltersBtn"
+      );
+      const clearMonthFiltersBtn = document.getElementById(
+        "clearMonthFiltersBtn"
+      );
+      const monthReportsTableBody = document.getElementById(
+        "monthReportsTableBody"
+      );
+      const monthReportsPagination = document.getElementById(
+        "monthReportsPagination"
+      );
+      const exportMonthCsvBtn = document.getElementById("exportMonthCsvBtn");
+
+      // Relatórios Anteriores Tab
+      const kpiPrevTotalReports = document.getElementById(
+        "kpiPrevTotalReports"
+      );
+      const kpiPrevInProgressReports = document.getElementById(
+        "kpiPrevInProgressReports"
+      );
+      const kpiPrevCompletedReports = document.getElementById(
+        "kpiPrevCompletedReports"
+      );
+      const kpiPrevAwaitingReturnReports = document.getElementById(
+        "kpiPrevAwaitingReturnReports"
+      );
+      const prevFilterStartDate = document.getElementById(
+        "prevFilterStartDate"
+      );
+      const prevFilterEndDate = document.getElementById("prevFilterEndDate");
+      const prevFilterClassification = document.getElementById(
+        "prevFilterClassification"
+      );
+      const prevFilterStatus = document.getElementById("prevFilterStatus");
+      const prevFilterSearch = document.getElementById("prevFilterSearch");
+      const applyPrevFiltersBtn = document.getElementById(
+        "applyPrevFiltersBtn"
+      );
+      const clearPrevFiltersBtn = document.getElementById(
+        "clearPrevFiltersBtn"
+      );
+      const prevReportsTableBody = document.getElementById(
+        "prevReportsTableBody"
+      );
+      const prevReportsPagination = document.getElementById(
+        "prevReportsPagination"
+      );
+      const exportPrevCsvBtn = document.getElementById("exportPrevCsvBtn");
+
+      // Dashboard Filters
+      const dashboardStartDate = document.getElementById("dashboardStartDate");
+      const dashboardEndDate = document.getElementById("dashboardEndDate");
+      const applyDashboardFilter = document.getElementById(
+        "applyDashboardFilter"
+      );
+
+      // View Report Modal
+      const viewReportModal = new bootstrap.Modal(
+        document.getElementById("viewReportModal")
+      );
+      const modalReportId = document.getElementById("modalReportId");
+      const modalReportDate = document.getElementById("modalReportDate");
+      const modalReportTime = document.getElementById("modalReportTime");
+      const modalReportCollaborator = document.getElementById(
+        "modalReportCollaborator"
+      );
+      const modalReportShift = document.getElementById("modalReportShift");
+      const modalReportClassification = document.getElementById(
+        "modalReportClassification"
+      );
+      const modalReportSubclassification = document.getElementById(
+        "modalReportSubclassification"
+      );
+      const modalReportRequester = document.getElementById(
+        "modalReportRequester"
+      );
+      const modalReportResidence = document.getElementById(
+        "modalReportResidence"
+      );
+      const modalReportSubject = document.getElementById("modalReportSubject");
+      const modalReportDescription = document.getElementById(
+        "modalReportDescription"
+      );
+      const modalReportStatus = document.getElementById("modalReportStatus");
+      const modalReportCreatedAt = document.getElementById(
+        "modalReportCreatedAt"
+      );
+      const modalReportUpdatedAt = document.getElementById(
+        "modalReportUpdatedAt"
+      );
+      const generatePdfBtn = document.getElementById("generatePdfBtn");
+
+      // --- Utility Functions ---
+      function showLoading() {
+        loadingOverlay.classList.remove("d-none");
+      }
+      function hideLoading() {
+        loadingOverlay.classList.add("d-none");
+      }
+
+      function formatDate(timestamp) {
+        if (!timestamp) return "";
+        const date = new Date(timestamp);
+        return (
+          date.toLocaleDateString("pt-BR") +
+          " " +
+          date.toLocaleTimeString("pt-BR")
+        );
+      }
+
+      function formatShortDate(dateString) {
+        if (!dateString) return "";
+        const [year, month, day] = dateString.split("-");
+        return `${day}/${month}/${year}`;
+      }
+
+      function showMessage(element, message, type) {
+        element.classList.remove(
+          "d-none",
+          "alert-success",
+          "alert-danger",
+          "alert-warning",
+          "alert-info"
+        );
+        element.classList.add(`alert-${type}`);
+        element.textContent = message;
+        setTimeout(() => element.classList.add("d-none"), 5000);
+      }
+
+      function generateUniqueId() {
+        return (
+          "report_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9)
+        );
+      }
+
+      // Helper to get rgba from CSS variable
+      function var_primary_color_rgba(alpha) {
+        const primaryColor = getComputedStyle(document.documentElement)
+          .getPropertyValue("--primary-color")
+          .trim();
+        if (primaryColor.startsWith("#")) {
+          const r = parseInt(primaryColor.substring(1, 3), 16);
+          const g = parseInt(primaryColor.substring(3, 5), 16);
+          const b = parseInt(primaryColor.substring(5, 7), 16);
+          return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        return `rgba(0, 123, 255, ${alpha})`; // Fallback
+      }
+
+      // --- Authentication ---
+      auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          currentUser = user;
+          try {
+            // Fetch user role from Realtime Database
+            const userRef = database.ref(`users/${user.uid}`);
+            userRef.once("value", (snapshot) => {
+              const userData = snapshot.val();
+              currentUserRole = userData ? userData.role : null;
+
+              if (
+                currentUserRole === "cliente" ||
+                currentUserRole === "gerente"
+              ) {
+                loginPage.classList.add("d-none");
+                appPage.classList.remove("d-none");
+                userEmailDisplay.textContent = user.email;
+                profileEmail.textContent = user.email;
+                profileRole.textContent = currentUserRole;
+                loadClassifications(); // Load classifications from DB
+                setupRealtimeListeners();
+                setInitialDateFilters();
+              } else {
+                alert(
+                  "Acesso negado. Você não tem permissão para acessar esta página."
+                );
+                auth.signOut();
+              }
+            });
+          } catch (error) {
+            console.error("Erro ao obter role do usuário:", error);
+            alert("Erro ao verificar permissões. Tente novamente.");
+            auth.signOut();
+          }
+        } else {
+          currentUser = null;
+          currentUserRole = null;
+          loginPage.classList.remove("d-none");
+          appPage.classList.add("d-none");
+        }
+        hideLoading();
+      });
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        showLoading();
+        const email = loginEmail.value;
+        const password = loginPassword.value;
+
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+          // User will be redirected by onAuthStateChanged
+        } catch (error) {
+          showMessage(loginError, `Erro de login: ${error.message}`, "danger");
+          console.error("Login error:", error);
+        } finally {
+          hideLoading();
+        }
+      });
+
+      logoutBtn.addEventListener("click", async () => {
+        if (confirm("Tem certeza que deseja sair?")) {
+          showLoading();
+          try {
+            await auth.signOut();
+          } catch (error) {
+            console.error("Logout error:", error);
+            alert("Erro ao fazer logout. Tente novamente.");
+          } finally {
+            hideLoading();
+          }
+        }
+      });
+
+      // --- Data Loading and Realtime Listeners ---
+
+      // Load classifications from Firebase
+      function loadClassifications() {
+        database.ref("classifications").on("value", (snapshot) => {
+          classifications = snapshot.val() || {};
+          populateClassificationSelects();
+        });
+      }
+
+      function setupRealtimeListeners() {
+        // Listen for reports
+        database
+          .ref("reports")
+          .orderByChild("userId")
+          .equalTo(currentUser.uid)
+          .on("value", (snapshot) => {
+            const reportsObj = snapshot.val() || {};
+            allReports = Object.keys(reportsObj).map((key) => ({
+              id: key,
+              ...reportsObj[key],
+            }));
+            allReports.sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            ); // Sort by newest first
+
+            applyMonthReportsFilters(); // Update "Relatórios do Mês"
+            applyPreviousReportsFilters(); // Update "Relatórios Anteriores"
+            updateDashboard(); // Update dashboard
+          });
+      }
+
+      function populateClassificationSelects() {
+        const classificationOptions = Object.keys(classifications)
+          .map((key) => `<option value="${key}">${key}</option>`)
+          .join("");
+
+        // Lançamento Form
+        if (reportClassification) {
+          reportClassification.innerHTML =
+            '<option value="">Selecione...</option>' + classificationOptions;
+        }
+
+        // Relatórios do Mês Filter
+        if (monthFilterClassification) {
+          monthFilterClassification.innerHTML =
+            '<option value="">Todas</option>' + classificationOptions;
+        }
+
+        // Relatórios Anteriores Filter
+        if (prevFilterClassification) {
+          prevFilterClassification.innerHTML =
+            '<option value="">Todas</option>' + classificationOptions;
+        }
+      }
+
+      reportClassification.addEventListener("change", () => {
+        const selectedClass = reportClassification.value;
+        reportSubclassification.innerHTML =
+          '<option value="">Selecione...</option>';
+        reportSubclassification.disabled = true;
+        otherDescriptionGroup.style.display = "none";
+        otherDescription.removeAttribute("required");
+
+        if (selectedClass && classifications[selectedClass]) {
+          const subclasses = classifications[selectedClass];
+          const subclassificationOptions = Object.values(subclasses)
+            .map((sub) => `<option value="${sub}">${sub}</option>`)
+            .join("");
+          reportSubclassification.innerHTML += subclassificationOptions;
+          reportSubclassification.disabled = false;
+        }
+      });
+
+      reportSubclassification.addEventListener("change", () => {
+        if (reportSubclassification.value === "Outros") {
+          otherDescriptionGroup.style.display = "block";
+          otherDescription.setAttribute("required", "required");
+        } else {
+          otherDescriptionGroup.style.display = "none";
+          otherDescription.removeAttribute("required");
+        }
+      });
+
+      // --- Lançamento Form Submission ---
+      reportForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        showLoading();
+
+        const selectedClassification = reportClassification.value;
+        const selectedSubclassification = reportSubclassification.value;
+        const finalSubclassification =
+          selectedSubclassification === "Outros"
+            ? otherDescription.value
+            : selectedSubclassification;
+
+        if (!selectedClassification || !finalSubclassification) {
+          showMessage(
+            reportFormMessage,
+            "Por favor, selecione a Classificação e Subclassificação.",
+            "danger"
+          );
+          hideLoading();
+          return;
+        }
+
+        const newReport = {
+          id: generateUniqueId(),
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+          data: reportDate.value,
+          hora: reportTime.value,
+          nomeColaborador: reportCollaborator.value, // NEW
+          plantao: reportShift.value, // NEW
+          classificacao: selectedClassification,
+          subclassificacao: finalSubclassification,
+          solicitanteInicial: reportRequester.value,
+          residencia: reportResidence.value,
+          assunto: reportSubject.value,
+          descricaoFato: reportDescription.value,
+          status: reportStatus.value, // NEW
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        try {
+          await database.ref("reports").child(newReport.id).set(newReport);
+          showMessage(
+            reportFormMessage,
+            "Relatório lançado com sucesso!",
+            "success"
+          );
+          reportForm.reset();
+          reportSubclassification.innerHTML =
+            '<option value="">Selecione...</option>';
+          reportSubclassification.disabled = true;
+          otherDescriptionGroup.style.display = "none";
+          otherDescription.removeAttribute("required");
+          // Set current date/time for next report
+          setInitialReportDateTime();
+        } catch (error) {
+          showMessage(
+            reportFormMessage,
+            `Erro ao lançar relatório: ${error.message}`,
+            "danger"
+          );
+          console.error("Error submitting report:", error);
+        } finally {
+          hideLoading();
+        }
+      });
+
+      function setInitialReportDateTime() {
+        const now = new Date();
+        reportDate.value = now.toISOString().split("T")[0];
+        reportTime.value = now.toTimeString().split(" ")[0].substring(0, 5);
+      }
+
+      // --- Relatórios do Mês (under Lançamento tab) Logic ---
+      function applyMonthReportsFilters() {
+        let tempReports = [...allReports];
+
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+
+        const start = thirtyDaysAgo;
+        const end = today;
+
+        const classification = monthFilterClassification.value;
+        const status = monthFilterStatus.value;
+        const search = monthFilterSearch.value.toLowerCase();
+
+        monthFilteredReports = tempReports.filter((report) => {
+          const reportDate = new Date(report.data + "T00:00:00");
+          const matchesDate = reportDate >= start && reportDate <= end;
+          const matchesClassification =
+            !classification || report.classificacao === classification;
+          const matchesStatus = !status || report.status === status;
+          const matchesSearch =
+            !search ||
+            report.assunto.toLowerCase().includes(search) ||
+            report.descricaoFato.toLowerCase().includes(search) ||
+            report.solicitanteInicial.toLowerCase().includes(search) ||
+            report.residencia.toLowerCase().includes(search) ||
+            report.nomeColaborador.toLowerCase().includes(search) || // NEW
+            report.plantao.toLowerCase().includes(search); // NEW
+          return (
+            matchesDate &&
+            matchesClassification &&
+            matchesStatus &&
+            matchesSearch
+          );
+        });
+
+        updateMonthReportsKPIs(monthFilteredReports);
+        renderReportsTable(
+          monthReportsTableBody,
+          monthFilteredReports,
+          monthCurrentPage,
+          monthReportsPerPage,
+          "month"
+        );
+        renderPagination(
+          monthReportsPagination,
+          monthFilteredReports.length,
+          monthCurrentPage,
+          monthReportsPerPage,
+          "month"
+        );
+      }
+
+      function updateMonthReportsKPIs(reports) {
+        kpiMonthTotalReports.textContent = reports.length;
+        kpiMonthInProgressReports.textContent = reports.filter(
+          (r) => r.status === "Em Andamento"
+        ).length;
+        kpiMonthCompletedReports.textContent = reports.filter(
+          (r) => r.status === "Concluído"
+        ).length;
+        kpiMonthAwaitingReturnReports.textContent = reports.filter(
+          (r) => r.status === "Aguardando Retorno da Gerência"
+        ).length;
+      }
+
+      applyMonthFiltersBtn.addEventListener("click", () => {
+        monthCurrentPage = 1; // Reset to first page on filter
+        applyMonthReportsFilters();
+      });
+
+      clearMonthFiltersBtn.addEventListener("click", () => {
+        monthFilterClassification.value = "";
+        monthFilterStatus.value = "";
+        monthFilterSearch.value = "";
+        monthCurrentPage = 1;
+        applyMonthReportsFilters();
+      });
+
+      exportMonthCsvBtn.addEventListener("click", () => {
+        if (monthFilteredReports.length === 0) {
+          alert("Nenhum relatório para exportar.");
+          return;
+        }
+        exportReportsToCSV(monthFilteredReports, "relatorios_do_mes");
+      });
+
+      // --- Relatórios Anteriores Tab Logic ---
+      function applyPreviousReportsFilters() {
+        let tempReports = [...allReports];
+
+        const start = prevFilterStartDate.value
+          ? new Date(prevFilterStartDate.value + "T00:00:00")
+          : null;
+        const end = prevFilterEndDate.value
+          ? new Date(prevFilterEndDate.value + "T23:59:59")
+          : null;
+        const classification = prevFilterClassification.value;
+        const status = prevFilterStatus.value;
+        const search = prevFilterSearch.value.toLowerCase();
+
+        prevFilteredReports = tempReports.filter((report) => {
+          const reportDate = new Date(report.data + "T00:00:00");
+          const matchesDate =
+            (!start || reportDate >= start) && (!end || reportDate <= end);
+          const matchesClassification =
+            !classification || report.classificacao === classification;
+          const matchesStatus = !status || report.status === status;
+          const matchesSearch =
+            !search ||
+            report.assunto.toLowerCase().includes(search) ||
+            report.descricaoFato.toLowerCase().includes(search) ||
+            report.solicitanteInicial.toLowerCase().includes(search) ||
+            report.residencia.toLowerCase().includes(search) ||
+            report.nomeColaborador.toLowerCase().includes(search) || // NEW
+            report.plantao.toLowerCase().includes(search); // NEW
+          return (
+            matchesDate &&
+            matchesClassification &&
+            matchesStatus &&
+            matchesSearch
+          );
+        });
+
+        updatePreviousReportsKPIs(prevFilteredReports);
+        renderReportsTable(
+          prevReportsTableBody,
+          prevFilteredReports,
+          prevCurrentPage,
+          prevReportsPerPage,
+          "prev"
+        );
+        renderPagination(
+          prevReportsPagination,
+          prevFilteredReports.length,
+          prevCurrentPage,
+          prevReportsPerPage,
+          "prev"
+        );
+      }
+
+      function updatePreviousReportsKPIs(reports) {
+        kpiPrevTotalReports.textContent = reports.length;
+        kpiPrevInProgressReports.textContent = reports.filter(
+          (r) => r.status === "Em Andamento"
+        ).length;
+        kpiPrevCompletedReports.textContent = reports.filter(
+          (r) => r.status === "Concluído"
+        ).length;
+        kpiPrevAwaitingReturnReports.textContent = reports.filter(
+          (r) => r.status === "Aguardando Retorno da Gerência"
+        ).length;
+      }
+
+      applyPrevFiltersBtn.addEventListener("click", () => {
+        prevCurrentPage = 1; // Reset to first page on filter
+        applyPreviousReportsFilters();
+      });
+
+      clearPrevFiltersBtn.addEventListener("click", () => {
+        prevFilterStartDate.value = "";
+        prevFilterEndDate.value = "";
+        prevFilterClassification.value = "";
+        prevFilterStatus.value = "";
+        prevFilterSearch.value = "";
+        prevCurrentPage = 1;
+        applyPreviousReportsFilters();
+      });
+
+      exportPrevCsvBtn.addEventListener("click", () => {
+        if (prevFilteredReports.length === 0) {
+          alert("Nenhum relatório para exportar.");
+          return;
+        }
+        exportReportsToCSV(prevFilteredReports, "relatorios_anteriores");
+      });
+
+      // --- Generic Report Table Rendering ---
+      function renderReportsTable(
+        tableBodyElement,
+        reportsToRender,
+        page,
+        reportsPerPage,
+        type
+      ) {
+        tableBodyElement.innerHTML = "";
+        const start = (page - 1) * reportsPerPage;
+        const end = start + reportsPerPage;
+        const paginatedReports = reportsToRender.slice(start, end);
+
+        if (paginatedReports.length === 0) {
+          tableBodyElement.innerHTML =
+            '<tr><td colspan="9" class="text-center">Nenhum relatório encontrado.</td></tr>';
+          return;
+        }
+
+        paginatedReports.forEach((report) => {
+          const row = tableBodyElement.insertRow();
+          row.innerHTML = `
+                    <td>${report.id.substring(0, 8)}...</td>
+                    <td>${formatShortDate(report.data)}</td>
+                    <td>${report.hora}</td>
+                    <td>${report.nomeColaborador}</td>
+                    <td>${report.plantao}</td>
+                    <td>${report.classificacao}</td>
+                    <td>${report.assunto}</td>
+                    <td><span class="badge bg-${getStatusBadgeColor(
+                      report.status
+                    )}">${report.status}</span></td>
+                    <td>
+                        <button class="btn btn-info btn-sm view-report-btn me-1" data-id="${
+                          report.id
+                        }" title="Visualizar"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-primary btn-sm generate-pdf-single-btn" data-id="${
+                          report.id
+                        }" title="Gerar PDF"><i class="fas fa-file-pdf"></i></button>
+                    </td>
+                `;
+        });
+
+        tableBodyElement
+          .querySelectorAll(".view-report-btn")
+          .forEach((button) => {
+            button.addEventListener("click", (e) => {
+              const reportId = e.currentTarget.dataset.id;
+              const report = allReports.find((r) => r.id === reportId);
+              if (report) {
+                displayReportInModal(report);
+              }
+            });
+          });
+
+        tableBodyElement
+          .querySelectorAll(".generate-pdf-single-btn")
+          .forEach((button) => {
+            button.addEventListener("click", (e) => {
+              const reportId = e.currentTarget.dataset.id;
+              const report = allReports.find((r) => r.id === reportId);
+              if (report) {
+                generateReportPdf(report);
+              }
+            });
+          });
+      }
+
+      function renderPagination(
+        paginationElement,
+        totalReports,
+        currentPage,
+        reportsPerPage,
+        type
+      ) {
+        paginationElement.innerHTML = "";
+        const totalPages = Math.ceil(totalReports / reportsPerPage);
+
+        if (totalPages <= 1) return;
+
+        const createPageItem = (page, isActive = false, isDisabled = false) => {
+          const li = document.createElement("li");
+          li.classList.add("page-item");
+          if (isActive) li.classList.add("active");
+          if (isDisabled) li.classList.add("disabled");
+
+          const a = document.createElement("a");
+          a.classList.add("page-link");
+          a.href = "#";
+          a.innerHTML = page; // Use innerHTML for icons
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (!isDisabled && !isActive) {
+              if (type === "month") {
+                monthCurrentPage = page;
+                renderReportsTable(
+                  monthReportsTableBody,
+                  monthFilteredReports,
+                  monthCurrentPage,
+                  monthReportsPerPage,
+                  "month"
+                );
+                renderPagination(
+                  monthReportsPagination,
+                  monthFilteredReports.length,
+                  monthCurrentPage,
+                  monthReportsPerPage,
+                  "month"
+                );
+              } else if (type === "prev") {
+                prevCurrentPage = page;
+                renderReportsTable(
+                  prevReportsTableBody,
+                  prevFilteredReports,
+                  prevCurrentPage,
+                  prevReportsPerPage,
+                  "prev"
+                );
+                renderPagination(
+                  prevReportsPagination,
+                  prevFilteredReports.length,
+                  prevCurrentPage,
+                  prevReportsPerPage,
+                  "prev"
+                );
+              }
+            }
+          });
+          li.appendChild(a);
+          return li;
+        };
+
+        paginationElement.appendChild(
+          createPageItem(
+            '<i class="fas fa-angle-left"></i>',
+            false,
+            currentPage === 1
+          )
+        );
+
+        for (let i = 1; i <= totalPages; i++) {
+          paginationElement.appendChild(createPageItem(i, i === currentPage));
+        }
+
+        paginationElement.appendChild(
+          createPageItem(
+            '<i class="fas fa-angle-right"></i>',
+            false,
+            currentPage === totalPages
+          )
+        );
+      }
+
+      // Pure JS CSV Export Function
+      function exportReportsToCSV(reports, filenamePrefix) {
+        try {
+          if (!Array.isArray(reports) || reports.length === 0) {
+            throw new Error("Nenhum relatório para exportar.");
+          }
+
+          // Define headers
+          const headers = [
+            "ID",
+            "Data",
+            "Hora",
+            "Colaborador",
+            "Plantão",
+            "Classificacao",
+            "Subclassificacao",
+            "Solicitante",
+            "Residencia",
+            "Assunto",
+            "Descricao",
+            "Status",
+            "CriadoEm",
+            "AtualizadoEm",
+          ];
+
+          // Function to escape CSV fields
+          function escapeCSVField(field) {
+            if (typeof field !== "string") {
+              field = String(field);
+            }
+            // Check if field needs quoting (contains ;, ", or newline)
+            if (
+              field.includes(";") ||
+              field.includes('"') ||
+              field.includes("\n")
+            ) {
+              // Escape quotes by doubling them
+              field = field.replace(/"/g, '""');
+              // Wrap in quotes
+              return '"' + field + '"';
+            }
+            return field;
+          }
+
+          // Build CSV content
+          let csvContent = headers.map(escapeCSVField).join(";") + "\n";
+
+          reports.forEach((report) => {
+            const row = [
+              report.id,
+              formatShortDate(report.data), // Use formatShortDate for CSV
+              report.hora,
+              report.nomeColaborador, // NEW
+              report.plantao, // NEW
+              report.classificacao,
+              report.subclassificacao,
+              report.solicitanteInicial,
+              report.residencia,
+              report.assunto,
+              report.descricaoFato,
+              report.status,
+              formatDate(report.createdAt),
+              formatDate(report.updatedAt),
+            ].map(escapeCSVField);
+            csvContent += row.join(";") + "\n";
+          });
+
+          // Add UTF-8 BOM for Excel compatibility
+          const BOM = "\uFEFF";
+          csvContent = BOM + csvContent;
+
+          // Create blob and download
+          const blob = new Blob([csvContent], {
+            type: "text/csv;charset=utf-8;",
+          });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `${filenamePrefix}_${
+            new Date().toISOString().split("T")[0]
+          }.csv`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+
+          // Show feedback
+          alert("CSV exportado com sucesso!");
+        } catch (error) {
+          console.error("Erro ao exportar CSV:", error);
+          alert("Erro ao exportar CSV: " + error.message);
+        }
+      }
+
+      // --- View Report Modal Logic ---
+      function displayReportInModal(report) {
+        modalReportId.textContent = report.id;
+        modalReportDate.textContent = formatShortDate(report.data);
+        modalReportTime.textContent = report.hora;
+        modalReportCollaborator.textContent = report.nomeColaborador; // NEW
+        modalReportShift.textContent = report.plantao; // NEW
+        modalReportClassification.textContent = report.classificacao;
+        modalReportSubclassification.textContent = report.subclassificacao;
+        modalReportRequester.textContent = report.solicitanteInicial;
+        modalReportResidence.textContent = report.residencia;
+        modalReportSubject.textContent = report.assunto;
+        modalReportDescription.textContent = report.descricaoFato;
+        modalReportStatus.textContent = report.status;
+        modalReportStatus.className = `badge bg-${getStatusBadgeColor(
+          report.status
+        )}`;
+        modalReportCreatedAt.textContent = formatDate(report.createdAt);
+        modalReportUpdatedAt.textContent = formatDate(report.updatedAt);
+
+        generatePdfBtn.onclick = () => generateReportPdf(report);
+        viewReportModal.show();
+      }
+
+      function getStatusBadgeColor(status) {
+        switch (status) {
+          case "Em Andamento":
+            return "warning";
+          case "Concluído":
+            return "success";
+          case "Aguardando Retorno da Gerência": // NEW
+            return "info";
+          default:
+            return "secondary";
+        }
+      }
+
+      // --- PDF Generation ---
+      async function generateReportPdf(report) {
+        showLoading();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const companyName = "Sistema de Relatórios RDN";
+        const reportTitle = "Detalhes do Relatório";
+        const dateGenerated = new Date().toLocaleDateString("pt-BR");
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(0, 123, 255); // Primary color
+        doc.text(companyName, 14, 20);
+        doc.setFontSize(12);
+        doc.setTextColor(108, 117, 125); // Secondary color
+        doc.text(`Relatório Gerado em: ${dateGenerated}`, 14, 27);
+
+        doc.setDrawColor(0, 123, 255);
+        doc.line(14, 30, 196, 30); // Underline header
+
+        // Report Title
+        doc.setFontSize(16);
+        doc.setTextColor(52, 58, 64); // Dark color
+        doc.text(reportTitle, 14, 45);
+
+        let y = 55;
+        const addField = (label, value) => {
+          doc.setFontSize(10);
+          doc.setTextColor(52, 58, 64);
+          doc.text(`${label}:`, 14, y);
+          doc.setFontSize(10);
+          doc.setTextColor(0, 0, 0);
+          doc.text(value || "N/A", 60, y);
+          y += 7;
+        };
+
+        addField("ID", report.id);
+        addField("Data", formatShortDate(report.data));
+        addField("Hora", report.hora);
+        addField("Colaborador", report.nomeColaborador); // NEW
+        addField("Plantão", report.plantao); // NEW
+        addField("Classificação", report.classificacao);
+        addField("Subclassificação", report.subclassificacao);
+        addField("Solicitante Inicial", report.solicitanteInicial);
+        addField("Residência", report.residencia);
+        addField("Assunto", report.assunto);
+        addField("Descrição do Fato", report.descricaoFato);
+        addField("Status", report.status);
+        addField("Criado em", formatDate(report.createdAt));
+        addField("Atualizado em", formatDate(report.updatedAt));
+        addField("Email do Usuário", report.userEmail);
+
+        doc.save(`relatorio_${report.id}.pdf`);
+        hideLoading();
+      }
+
+      // --- Dashboard Logic ---
+      function setInitialDateFilters() {
+        const today = new Date();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+
+        dashboardEndDate.value = today.toISOString().split("T")[0];
+        dashboardStartDate.value = thirtyDaysAgo.toISOString().split("T")[0];
+
+        // Also set for previous reports filter (default to last 30 days)
+        prevFilterEndDate.value = today.toISOString().split("T")[0];
+        prevFilterStartDate.value = thirtyDaysAgo.toISOString().split("T")[0];
+
+        setInitialReportDateTime(); // For new report form
+      }
+
+      function updateDashboard() {
+        const start = dashboardStartDate.value
+          ? new Date(dashboardStartDate.value + "T00:00:00")
+          : null;
+        const end = dashboardEndDate.value
+          ? new Date(dashboardEndDate.value + "T23:59:59")
+          : null;
+
+        const dashboardReports = allReports.filter((report) => {
+          const reportDate = new Date(report.data + "T00:00:00");
+          return (!start || reportDate >= start) && (!end || reportDate <= end);
+        });
+
+        // KPIs
+        document.getElementById("kpiTotalReports").textContent =
+          dashboardReports.length;
+        document.getElementById("kpiInProgressReports").textContent =
+          dashboardReports.filter((r) => r.status === "Em Andamento").length;
+        document.getElementById("kpiCompletedReports").textContent =
+          dashboardReports.filter((r) => r.status === "Concluído").length;
+        document.getElementById("kpiAwaitingReturnReports").textContent = // NEW
+          dashboardReports.filter(
+            (r) => r.status === "Aguardando Retorno da Gerência"
+          ).length;
+
+        // Charts
+        renderStatusChart(dashboardReports);
+        renderClassificationChart(dashboardReports);
+        renderTrendChart(dashboardReports);
+
+        // Last 5 Reports
+        renderDashboardLastReports(dashboardReports);
+      }
+
+      applyDashboardFilter.addEventListener("click", updateDashboard);
+
+      function renderStatusChart(reports) {
+        const statusCounts = {
+          "Em Andamento": 0,
+          Concluído: 0,
+          "Aguardando Retorno da Gerência": 0,
+        }; // NEW
+        reports.forEach((report) => {
+          if (statusCounts.hasOwnProperty(report.status)) {
+            statusCounts[report.status]++;
+          }
+        });
+
+        const ctx = document.getElementById("statusChart").getContext("2d");
+        if (statusChartInstance) statusChartInstance.destroy();
+        statusChartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: [
+              "Em Andamento",
+              "Concluído",
+              "Aguardando Retorno da Gerência",
+            ], // NEW
+            datasets: [
+              {
+                data: [
+                  statusCounts["Em Andamento"],
+                  statusCounts["Concluído"],
+                  statusCounts["Aguardando Retorno da Gerência"], // NEW
+                ],
+                backgroundColor: ["#ffc107", "#28a745", "#17a2b8"], // Warning, Success, Info (NEW)
+                hoverOffset: 4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "top",
+              },
+              title: {
+                display: true,
+                text: "Distribuição por Status",
+              },
+            },
+          },
+        });
+      }
+
+      function renderClassificationChart(reports) {
+        const classificationCounts = {};
+        reports.forEach((report) => {
+          classificationCounts[report.classificacao] =
+            (classificationCounts[report.classificacao] || 0) + 1;
+        });
+
+        const labels = Object.keys(classificationCounts);
+        const data = Object.values(classificationCounts);
+
+        const ctx = document
+          .getElementById("classificationChart")
+          .getContext("2d");
+        if (classificationChartInstance) classificationChartInstance.destroy();
+        classificationChartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Número de Relatórios",
+                data: data,
+                backgroundColor: var_primary_color_rgba(0.7), // Use primary color with transparency
+                borderColor: var_primary_color_rgba(1),
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+              title: {
+                display: true,
+                text: "Relatórios por Classificação",
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  precision: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function renderTrendChart(reports) {
+        const dailyCounts = {};
+        const today = new Date();
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(today);
+          d.setDate(today.getDate() - i);
+          dailyCounts[d.toISOString().split("T")[0]] = 0;
+        }
+
+        reports.forEach((report) => {
+          const reportDate = report.data;
+          if (dailyCounts.hasOwnProperty(reportDate)) {
+            dailyCounts[reportDate]++;
+          }
+        });
+
+        const sortedDates = Object.keys(dailyCounts).sort();
+        const data = sortedDates.map((date) => dailyCounts[date]);
+        const labels = sortedDates.map((date) => formatShortDate(date));
+
+        const ctx = document.getElementById("trendChart").getContext("2d");
+        if (trendChartInstance) trendChartInstance.destroy();
+        trendChartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Relatórios por Dia",
+                data: data,
+                borderColor: var_primary_color_rgba(1),
+                backgroundColor: var_primary_color_rgba(0.2),
+                fill: true,
+                tension: 0.1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+              title: {
+                display: true,
+                text: "Tendência de Relatórios (Últimos 30 dias)",
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  precision: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function renderDashboardLastReports(reports) {
+        dashboardLastReportsBody.innerHTML = "";
+        const last5Reports = reports.slice(0, 5); // Get the 5 most recent reports
+
+        if (last5Reports.length === 0) {
+          dashboardLastReportsBody.innerHTML =
+            '<tr><td colspan="7" class="text-center">Nenhum relatório recente.</td></tr>';
+          return;
+        }
+
+        last5Reports.forEach((report) => {
+          const row = dashboardLastReportsBody.insertRow();
+          row.innerHTML = `
+                    <td>${report.id.substring(0, 8)}...</td>
+                    <td>${formatShortDate(report.data)}</td>
+                    <td>${report.nomeColaborador}</td>
+                    <td>${report.plantao}</td>
+                    <td>${report.classificacao}</td>
+                    <td><span class="badge bg-${getStatusBadgeColor(
+                      report.status
+                    )}">${report.status}</span></td>
+                    <td>
+                        <button class="btn btn-info btn-sm view-report-btn" data-id="${
+                          report.id
+                        }" title="Visualizar"><i class="fas fa-eye"></i></button>
+                    </td>
+                `;
+        });
+
+        document
+          .querySelectorAll("#dashboardLastReportsBody .view-report-btn")
+          .forEach((button) => {
+            button.addEventListener("click", (e) => {
+              const reportId = e.currentTarget.dataset.id;
+              const report = allReports.find((r) => r.id === reportId);
+              if (report) {
+                displayReportInModal(report);
+              }
+            });
+          });
+      }
+
+      // Initial setup
+      document.addEventListener("DOMContentLoaded", () => {
+        showLoading();
+        // Set current date for new report form
+        setInitialReportDateTime();
+      });
+
+      // Offcanvas for sidebar on small screens
+      var offcanvasElement = document.getElementById("sidebarOffcanvas");
+      var offcanvas = new bootstrap.Offcanvas(offcanvasElement);
+
+      document
+        .querySelector('.d-lg-none[data-bs-toggle="offcanvas"]')
+        .addEventListener("click", function () {
+          offcanvas.show();
+        });
+
+      // Close offcanvas when a nav link is clicked
+      document.querySelectorAll(".sidebar .nav-link").forEach((link) => {
+        link.addEventListener("click", () => {
+          if (window.innerWidth < 992) {
+            // Only for small screens
+            offcanvas.hide();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
